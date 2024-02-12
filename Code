@@ -11,30 +11,32 @@ class Usuario:
 class SistemaRespuestaAutomatica:
     def __init__(self, usuario):
         self.usuario = usuario
-        self.mensaje_predeterminado = "Lo siento, estoy ocupado en este momento."
+        self.mensaje_predeterminado = "Lo siento, estoy ocupada en este momento."
         self.ultimo_estado = None
         self.mostrar_menu_configuracion = True
-        self.detener = False
+        self.condicion = threading.Condition()
 
     def monitorear_estado(self):
-        while not self.detener:
-            if self.usuario.disponible != self.ultimo_estado:
-                self.ultimo_estado = self.usuario.disponible
-                if not self.usuario.disponible:
-                    print("Llamada no tomada. Enviando mensaje de no disponibilidad:", self.mensaje_predeterminado)
-                    self.mostrar_menu_configuracion = False
-                    # Llamar al método para volver a verificar el estado después de 15 segundos
-                    threading.Timer(15, self.verificar_disponibilidad).start()
+        while True:
+            with self.condicion:  # Adquirir el semáforo
+                if self.usuario.disponible != self.ultimo_estado:
+                    self.ultimo_estado = self.usuario.disponible
+                    if not self.usuario.disponible:
+                        print("Llamada no tomada. Enviando mensaje de no disponibilidad:", self.mensaje_predeterminado)
+                        self.mostrar_menu_configuracion = False
+                        # Llamar al método para volver a verificar el estado después de 15 segundos
+                        threading.Timer(15, self.verificar_disponibilidad).start()
             time.sleep(1)  # Esperar 1 segundo antes de verificar de nuevo
 
     def verificar_disponibilidad(self):
-        # Volver a verificar el estado de disponibilidad después de 15 segundos
-        if not self.usuario.disponible:
-            print("Volver a verificar la disponibilidad después de 15 segundos...")
-            time.sleep(15)
+        with self.condicion:  # Adquirir el semáforo
+            # Volver a verificar el estado de disponibilidad después de 15 segundos
             if not self.usuario.disponible:
-                print("Usuario todavía no disponible. Enviando mensaje de no disponibilidad nuevamente:", self.mensaje_predeterminado)
-                threading.Timer(15, self.verificar_disponibilidad).start()
+                print("Volver a verificar la disponibilidad después de 15 segundos...")
+                time.sleep(15)
+                if not self.usuario.disponible:
+                    print("Usuario todavía no disponible. Enviando mensaje de no disponibilidad nuevamente:", self.mensaje_predeterminado)
+                    threading.Timer(15, self.verificar_disponibilidad).start()
 
 def main():
     usuario = Usuario()
@@ -58,17 +60,14 @@ def main():
                 nuevo_mensaje = input("Ingrese el nuevo mensaje predeterminado: ")
                 sistema_respuesta_automatica.mensaje_predeterminado = nuevo_mensaje
                 print("Mensaje predeterminado actualizado.")
-                sistema_respuesta_automatica.mostrar_menu_configuracion = True
             elif opcion == '2':
                 nueva_disponibilidad = input("Seleccione la nueva preferencia de disponibilidad (1 para disponible, 0 para no disponible): ")
                 usuario.cambiar_disponibilidad(bool(int(nueva_disponibilidad)))
                 estado = "disponible" if usuario.disponible else "no disponible"
-                sistema_respuesta_automatica.mostrar_menu_configuracion = False
                 print(f"El usuario ahora está {estado}.")
-
+                sistema_respuesta_automatica.mostrar_menu_configuracion = False  # No mostrar el menú después de seleccionar esta opción
             elif opcion == '3':
                 print("Saliendo del programa...")
-                sistema_respuesta_automatica.detener = True
                 break
             else:
                 print("Opción inválida. Intente nuevamente.")
