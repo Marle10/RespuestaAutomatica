@@ -27,3 +27,13 @@ Cómo Mejora la Experiencia del Usuario:
 
 3. Reducción del Estrés:
    - Al automatizar la gestión de llamadas en momentos ocupados, el sistema contribuye a reducir el estrés asociado con la necesidad de responder manualmente en situaciones inconvenientes.
+
+
+Semaforo:
+
+Se usó un semáforo con un contador inicial de 1 en la clase SistemaRespuestaAutomatica. Luego, dentro del método monitorear_estado, el semáforo se adquiere (acquire) antes de acceder a la sección crítica del código, donde se verifica y actualiza el estado del usuario y se envía el mensaje de WhatsApp. Esto garantiza que solo una parte del código se ejecute a la vez, evitando problemas de concurrencia. Una vez que se completa la sección crítica, el semáforo se libera (release) para permitir que otros hilos accedan a la sección crítica.
+
+Se creó un objeto threading. Condition llamado condicion en la clase SistemaRespuestaAutomatica. Este objeto se utiliza para implementar un semáforo utilizando los métodos wait y notify (equivalentes a signal en otros lenguajes). Se adquiere el semáforo utilizando el método with self.condicion, y se libera automáticamente al salir del bloque with.
+
+Con esta implementación, se garantiza que la sección crítica del código (donde se verifica y actualiza el estado del usuario) sea ejecutada de manera segura por un único hilo a la vez.
+
